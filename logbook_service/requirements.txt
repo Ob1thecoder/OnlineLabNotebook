@@ -1,0 +1,36 @@
+# Django core
+Django==5.1.7
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.6.0
+django-environ==0.11.2
+
+# Async / WebSockets
+channels==4.1.0
+channels-redis==4.2.0
+daphne==4.1.2
+
+# Celery / task queue
+celery[redis]==5.4.0
+redis==5.2.1
+
+# Database
+psycopg2-binary==2.9.10
+
+# PDF export
+WeasyPrint==62.3
+
+# AI
+anthropic==0.40.0
+
+# File storage
+Pillow==11.1.0
+boto3==1.37.12
+
+# Server
+gunicorn==23.0.0
+uvicorn[standard]==0.34.0
+
+# Testing
+pytest==8.3.5
+pytest-django==4.9.0
