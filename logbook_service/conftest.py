@@ -69,6 +69,17 @@ def entry_template(db):
     )
 
 
+@pytest.fixture
+def template_section(db, entry_template):
+    return TemplateSection.objects.create(
+        template=entry_template,
+        title="Objective",
+        prompt="State the objective.",
+        is_required=True,
+        order=0,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Entries
 # ---------------------------------------------------------------------------
@@ -76,6 +87,16 @@ def entry_template(db):
 @pytest.fixture
 def entry(db, project, user):
     return Entry.objects.create(project=project, author=user, title="Sample Entry")
+
+
+@pytest.fixture
+def entry_with_template(db, project, user, entry_template):
+    return Entry.objects.create(
+        project=project,
+        author=user,
+        title="Templated Entry",
+        template=entry_template,
+    )
 
 
 @pytest.fixture

@@ -1,15 +1,18 @@
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import MethodNotAllowed, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.entries.models import AuditLog, Entry
+from apps.entries.models import AuditLog, Entry, EntrySection
 from apps.entries.permissions import CanAdminEntry, CanEditEntry, CanViewEntry
 from apps.entries.serializers import (
     AuditLogSerializer,
     EntryCreateSerializer,
+    EntrySectionSerializer,
+    EntrySectionUpdateSerializer,
     EntrySerializer,
     EntryUpdateSerializer,
     EntryVersionSerializer,
@@ -17,6 +20,7 @@ from apps.entries.serializers import (
 from apps.entries.services import archive_entry, create_entry, submit_entry, update_entry
 from apps.projects.models import ProjectMembership
 from apps.projects.permissions import _ROLE_RANK, _get_role
+from apps.templates_engine.models import TemplateSection
 
 
 class EntryViewSet(viewsets.ModelViewSet):
@@ -39,7 +43,7 @@ class EntryViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_permissions(self):
-        if self.action in ["update", "partial_update", "archive", "submit"]:
+        if self.action in ["update", "partial_update", "archive", "submit", "update_section"]:
             return [IsAuthenticated(), CanEditEntry()]
         if self.action in ["retrieve", "versions", "audit_log"]:
             return [IsAuthenticated(), CanViewEntry()]
@@ -123,3 +127,24 @@ class EntryViewSet(viewsets.ModelViewSet):
         entry = self.get_object()
         logs = AuditLog.objects.filter(entry=entry)
         return Response(AuditLogSerializer(logs, many=True).data)
+
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path=r"sections/(?P<section_id>[0-9]+)",
+    )
+    def update_section(self, request, pk=None, section_id=None):
+        entry = self.get_object()
+        template_section = get_object_or_404(
+            TemplateSection,
+            pk=section_id,
+            template=entry.template,
+        )
+        serializer = EntrySectionUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        section, _ = EntrySection.objects.update_or_create(
+            entry=entry,
+            template_section=template_section,
+            defaults={"content": serializer.validated_data["content"]},
+        )
+        return Response(EntrySectionSerializer(section).data)

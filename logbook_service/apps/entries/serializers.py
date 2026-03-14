@@ -1,14 +1,34 @@
 from rest_framework import serializers
 
-from apps.entries.models import AuditLog, Entry, EntryVersion
+from apps.entries.models import AuditLog, Entry, EntrySection, EntryVersion
 from apps.projects.models import Experiment, Project
 from apps.templates_engine.models import EntryTemplate
+
+
+class EntrySectionSerializer(serializers.ModelSerializer):
+    """Read serializer for a single EntrySection record."""
+
+    template_section_title = serializers.CharField(
+        source="template_section.title", read_only=True
+    )
+
+    class Meta:
+        model = EntrySection
+        fields = ["id", "template_section", "template_section_title", "content", "updated_at"]
+        read_only_fields = fields
+
+
+class EntrySectionUpdateSerializer(serializers.Serializer):
+    """Write serializer for upserting section content via PATCH."""
+
+    content = serializers.CharField(allow_blank=True)
 
 
 class EntrySerializer(serializers.ModelSerializer):
     """Read serializer — used for list, retrieve, and action responses."""
 
     author_email = serializers.EmailField(source="author.email", read_only=True)
+    sections = EntrySectionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Entry
@@ -22,6 +42,7 @@ class EntrySerializer(serializers.ModelSerializer):
             "status",
             "is_archived",
             "author_email",
+            "sections",
             "created_at",
             "updated_at",
         ]

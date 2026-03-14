@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.projects.models import Experiment, Project
-from apps.templates_engine.models import EntryTemplate
+from apps.templates_engine.models import EntryTemplate, TemplateSection
 
 
 class Entry(models.Model):
@@ -257,3 +257,32 @@ class IPClaim(models.Model):
 
     def __str__(self) -> str:
         return f"IP claim on entry {self.entry_id} by {self.claimant_id}"
+
+
+class EntrySection(models.Model):
+    """
+    Content authored for a single TemplateSection within a templated Entry.
+
+    content may be blank during editing; emptiness is only enforced at submit
+    time via submit_entry() in services.py.
+    """
+
+    entry = models.ForeignKey(
+        Entry,
+        on_delete=models.CASCADE,
+        related_name="sections",
+    )
+    template_section = models.ForeignKey(
+        TemplateSection,
+        on_delete=models.CASCADE,
+        related_name="entry_sections",
+    )
+    content = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "entries_entrysection"
+        unique_together = ("entry", "template_section")
+
+    def __str__(self) -> str:
+        return f"Section '{self.template_section.title}' for entry {self.entry_id}"

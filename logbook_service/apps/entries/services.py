@@ -1,7 +1,7 @@
 from django.db import transaction
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from apps.entries.models import AuditLog, Entry, EntryVersion
+from apps.entries.models import AuditLog, Entry, EntrySection, EntryVersion
 from apps.projects.models import Project
 from apps.users.models import User
 
@@ -128,6 +128,22 @@ def submit_entry(entry: Entry, actor: User) -> Entry:
         )
     if entry.is_archived:
         raise PermissionDenied("Archived entries cannot be submitted.")
+
+    if entry.template_id is not None:
+        required_sections = entry.template.sections.filter(is_required=True)
+        filled_ids = set(
+            EntrySection.objects.filter(
+                entry=entry,
+                template_section__in=required_sections,
+            )
+            .exclude(content="")
+            .values_list("template_section_id", flat=True)
+        )
+        missing = [sec.title for sec in required_sections if sec.pk not in filled_ids]
+        if missing:
+            raise ValidationError(
+                f"The following required sections are missing or empty: {', '.join(missing)}."
+            )
 
     entry.status = Entry.STATUS_SUBMITTED
     entry.save(update_fields=["status"])
